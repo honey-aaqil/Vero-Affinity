@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "chat-image-1",
+      "description": "Abstract city night lights",
+      "imageUrl": "https://images.unsplash.com/photo-1435575653489-b0873ec954e2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMGNpdHl8ZW58MHx8fHwxNzY1NjM2MTY1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract city"
+    },
+    {
+      "id": "chat-image-2",
+      "description": "A quiet forest path",
+      "imageUrl": "https://images.unsplash.com/photo-1623967680551-3e4694e2c9ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmb3Jlc3QlMjBwYXRofGVufDB8fHx8MTc2NTYzMDgyNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "forest path"
+    },
+    {
+      "id": "chat-image-3",
+      "description": "Neon sign in an alley",
+      "imageUrl": "https://images.unsplash.com/photo-1496449903678-68ddcb189a24?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxuZW9uJTIwc2lnbnxlbnwwfHx8fDE3NjU1NTUwOTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "neon sign"
+    }
+  ]
 }
