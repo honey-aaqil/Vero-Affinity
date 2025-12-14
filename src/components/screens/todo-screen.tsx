@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { ListTodo, Plus, Trash2 } from 'lucide-react';
 import { useLongPress } from '@/hooks/use-long-press';
 import { useSwipe } from '@/hooks/use-swipe';
+import { useToast } from '@/hooks/use-toast';
 import type { Todo } from '@/lib/types';
 
 interface TodoScreenProps {
@@ -24,7 +25,11 @@ const formSchema = z.object({
   username: z.string().min(2, {
     message: "Username must be at least 2 characters.",
   }),
+  password: z.string().optional(),
 });
+
+// Recognized aliases that trigger the password field
+const RECOGNIZED_ALIASES = ['admin', 'agent', 'operator'];
 
 const initialTodos: Todo[] = [
   { id: '1', text: 'Finalize quarterly report', completed: false },
@@ -36,16 +41,68 @@ const TodoScreen: FC<TodoScreenProps> = ({ onUnlock }) => {
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [newTodo, setNewTodo] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: '',
+      password: '',
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    onUnlock(values.username);
+  const watchedUsername = form.watch('username');
+  const shouldShowPassword = RECOGNIZED_ALIASES.includes(watchedUsername?.toLowerCase());
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: values.username,
+          password: values.password || '',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Success - close dialog and unlock
+        setIsDialogOpen(false);
+        form.reset();
+        onUnlock(data.user.username);
+        
+        // Store lightweight flag to skip duplicate auth checks
+        sessionStorage.setItem('vero-affinity-auth-checked', 'true');
+        
+        toast({
+          title: "Access granted",
+          description: "Secure session established.",
+        });
+      } else {
+        // Show muted error toast
+        toast({
+          title: "Access denied",
+          description: data.error || "Invalid credentials",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      toast({
+        title: "Connection error",
+        description: "Unable to verify credentials",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const handleAddTodo = () => {
@@ -136,7 +193,7 @@ const TodoScreen: FC<TodoScreenProps> = ({ onUnlock }) => {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="username"
@@ -144,13 +201,45 @@ const TodoScreen: FC<TodoScreenProps> = ({ onUnlock }) => {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="affinity_user" {...field} className="bg-background/50 backdrop-blur-sm focus:shadow-glow"/>
+                      <Input 
+                        placeholder="affinity_user" 
+                        {...field} 
+                        className="bg-background/50 backdrop-blur-sm focus:shadow-glow"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full shadow-glow">Create</Button>
+              
+              {shouldShowPassword && (
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PIN</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          placeholder="••••••" 
+                          {...field} 
+                          className="bg-background/50 backdrop-blur-sm focus:shadow-glow"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              <Button 
+                type="submit" 
+                className="w-full shadow-glow"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Verifying...' : 'Create'}
+              </Button>
             </form>
           </Form>
         </DialogContent>

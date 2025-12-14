@@ -7,8 +7,8 @@ export const useLongPress = (
   onClick?: (event: React.MouseEvent | React.TouchEvent) => void,
   { shouldPreventDefault = true, delay = 300 } = {}
 ) => {
-  const timeout = useRef<NodeJS.Timeout>();
-  const target = useRef<EventTarget>();
+  const timeout = useRef<NodeJS.Timeout | undefined>(undefined);
+  const target = useRef<EventTarget | undefined>(undefined);
 
   const start = useCallback(
     (event: React.MouseEvent | React.TouchEvent) => {
@@ -35,7 +35,8 @@ export const useLongPress = (
   );
 
   const preventDefault = (event: Event) => {
-    if (!('touches' in event) || event.touches.length < 2) {
+    const touchEvent = event as TouchEvent;
+    if (!('touches' in touchEvent) || touchEvent.touches.length < 2) {
       if (event.cancelable) {
         event.preventDefault();
       }
