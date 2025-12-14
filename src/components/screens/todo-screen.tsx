@@ -1,7 +1,7 @@
 'use client';
 
 import type { FC } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,9 +11,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { ListTodo, Plus, Trash2 } from 'lucide-react';
+import { ListTodo, Plus, Trash2, RotateCcw } from 'lucide-react';
 import { useLongPress } from '@/hooks/use-long-press';
 import { useSwipe } from '@/hooks/use-swipe';
+import { useToast } from '@/hooks/use-toast';
 import type { Todo } from '@/lib/types';
 
 interface TodoScreenProps {
@@ -26,6 +27,10 @@ const formSchema = z.object({
   }),
 });
 
+// LocalStorage key for persisting tasks - no network calls are made
+const TODOS_STORAGE_KEY = 'vero-affinity-todos';
+
+// Default tasks used to seed localStorage on first load
 const initialTodos: Todo[] = [
   { id: '1', text: 'Finalize quarterly report', completed: false },
   { id: '2', text: 'Book flight to Tokyo', completed: false },
@@ -33,9 +38,12 @@ const initialTodos: Todo[] = [
 ];
 
 const TodoScreen: FC<TodoScreenProps> = ({ onUnlock }) => {
+  // State starts with default tasks, then hydrates from localStorage on mount
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [newTodo, setNewTodo] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,6 +51,35 @@ const TodoScreen: FC<TodoScreenProps> = ({ onUnlock }) => {
       username: '',
     },
   });
+
+  // Hydrate todos from localStorage on mount (client-side only)
+  // Note: All task data is stored locally - no API or network calls are made
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedTodos = localStorage.getItem(TODOS_STORAGE_KEY);
+      if (storedTodos) {
+        try {
+          const parsed = JSON.parse(storedTodos) as Todo[];
+          setTodos(parsed);
+        } catch (error) {
+          console.error('Failed to parse stored todos:', error);
+          // On parse error, keep using initialTodos
+        }
+      } else {
+        // First load - seed with default tasks
+        localStorage.setItem(TODOS_STORAGE_KEY, JSON.stringify(initialTodos));
+      }
+      setIsHydrated(true);
+    }
+  }, []);
+
+  // Persist todos to localStorage whenever they change (client-side only)
+  // Skip the initial mount to avoid overwriting during hydration
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isHydrated) {
+      localStorage.setItem(TODOS_STORAGE_KEY, JSON.stringify(todos));
+    }
+  }, [todos, isHydrated]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onUnlock(values.username);
@@ -62,10 +99,23 @@ const TodoScreen: FC<TodoScreenProps> = ({ onUnlock }) => {
   const handleDeleteTodo = (id: string) => {
     setTodos(todos.filter(todo => todo.id !== id));
   };
+
+  // Reset list to defaults and clear localStorage (for QA/testing)
+  const handleResetList = () => {
+    setTodos(initialTodos);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(TODOS_STORAGE_KEY, JSON.stringify(initialTodos));
+    }
+    toast({
+      title: 'List reset',
+      description: 'Tasks have been restored to defaults',
+    });
+  };
   
   const openDialog = () => setIsDialogOpen(true);
   const longPressEvents = useLongPress(openDialog);
   const swipeEvents = useSwipe({ onSwipeRight: openDialog });
+  const resetLongPressEvents = useLongPress(handleResetList, undefined, { delay: 1500 });
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
@@ -114,6 +164,22 @@ const TodoScreen: FC<TodoScreenProps> = ({ onUnlock }) => {
                 </Button>
               </div>
             ))}
+          </div>
+          
+          {/* Hidden reset control for QA - long-press to reset list */}
+          <div 
+            {...resetLongPressEvents}
+            className="mt-4 pt-2 border-t border-border/30 flex items-center justify-center cursor-default"
+          >
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs text-muted-foreground/50 hover:text-muted-foreground opacity-30 hover:opacity-100 transition-opacity"
+              onClick={handleResetList}
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Reset
+            </Button>
           </div>
         </CardContent>
       </Card>
