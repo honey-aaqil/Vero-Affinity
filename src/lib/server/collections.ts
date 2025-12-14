@@ -13,8 +13,14 @@ export interface UserDoc extends Document {
 
 export interface ChatDoc extends Document {
   _id: ObjectId;
+  senderId: ObjectId;
+  senderAlias: string;
+  text: string;
+  ciphertext?: string;
+  plaintext?: string;
+  type: 'text' | 'image' | 'voice';
   createdAt: Date;
-  updatedAt?: Date;
+  mediaId?: ObjectId;
 }
 
 export interface AuditLogDoc extends Document {

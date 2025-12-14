@@ -68,7 +68,7 @@ const MessageInput: FC<MessageInputProps> = ({ onSendMessage }) => {
         onKeyDown={handleKeyPress}
         placeholder="Type a message..."
         rows={1}
-        className="flex-1 resize-none bg-card/75 backdrop-blur-sm focus:shadow-glow min-h-0"
+        className="flex-1 resize-none bg-card/80 backdrop-blur-md focus:ring-2 focus:ring-accent/50 focus:shadow-glow min-h-0 transition-all"
       />
       <input
         type="file"
@@ -77,13 +77,13 @@ const MessageInput: FC<MessageInputProps> = ({ onSendMessage }) => {
         accept="image/*"
         onChange={handleFileChange}
       />
-      <Button variant="ghost" size="icon" onClick={handleAttachClick}>
+      <Button variant="ghost" size="icon" onClick={handleAttachClick} className="hover:text-accent transition-colors">
         <Paperclip className="w-5 h-5" />
       </Button>
-      <Button variant="ghost" size="icon" onClick={handleVoiceClick}>
+      <Button variant="ghost" size="icon" onClick={handleVoiceClick} className="hover:text-accent transition-colors">
         <Mic className="w-5 h-5" />
       </Button>
-      <Button onClick={handleSend} size="icon" className="shadow-glow">
+      <Button onClick={handleSend} size="icon" className="bg-primary hover:bg-primary/90 shadow-glow transition-all">
         <Send className="w-5 h-5" />
       </Button>
     </div>
